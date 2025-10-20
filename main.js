@@ -1,25 +1,47 @@
-const prompt = require('prompt-sync')({ sigint: true });
-let Fnum = prompt('First Number: ');
-let MOperator = prompt('Math Operator: ');
-let Snum = prompt('Second Number: ');
-Fnum = parseFloat(Fnum);
-Snum = parseFloat(Snum);
-const operators = {
-  '+': (a, b) => a + b,
-  '-': (a, b) => a - b,
-  '*': (a, b) => a * b,
-  '/': (a, b) => a / b,
-  '%': (a, b) => a % b,
-  '**': (a, b) => a ** b,
-};
+import promptSync from 'prompt-sync';
+import axios from 'axios';
 
-// Check if operator is valid
-if (isNaN(Fnum) || isNaN(Snum)) {
-    console.log('Please enter valid numbers for First Number and Second Number.');
+const prompt = promptSync({ sigint: true });
+
+const userId = '001'
+
+async function chat() {
+  const date = new Date();
+  console.log("CBJ-CHAT. Type 'exit' to quit.");
+  while (true) {
+    // Input
+    process.stdout.write('Send a message: ');
+    const userInput = prompt('>> ');
+
+    // Clear the input after entering a message
+    process.stdout.moveCursor(0, -1);  
+    process.stdout.clearLine(1);       
+    process.stdout.cursorTo(0);
+
+    // Exit condition
+    if (userInput.toLowerCase() === 'exit') {
+      console.log('Exiting chat. Goodbye!');
+      break;
+    } if (userInput.trim() === '') {
+      continue; // Skip empty messages
+    }
+
+    // Output
+    console.log(`[${date.toDateString()}]: ${userInput}`);
+
+    // Send message to server
+    try {
+      const response = await axios.post('http://localhost:3000/', {
+        userId,
+        message: userInput
+      });
+      console.log('Server response:', response.data);
+    } catch (error) {
+      console.error('Error sending message:', error.message);
+    }
+  }
 }
-if (operators[MOperator]) {
-  const result = operators[MOperator](Fnum, Snum);
-  console.log(`Result: ${Fnum} ${MOperator} ${Snum} = ${result}`);
-} else {
-  console.log('Invalid operator. Please use one of the following: +, -, *, /, %, **');
-}
+
+(async () => {
+  await chat();
+})();

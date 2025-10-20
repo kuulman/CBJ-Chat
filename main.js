@@ -13,7 +13,7 @@ async function chat() {
     process.stdout.write('Send a message: ');
     const userInput = prompt('>> ');
 
-    // Clear the input after entering a message
+    // Clear the input after entering a messagehi
     process.stdout.moveCursor(0, -1);  
     process.stdout.clearLine(1);       
     process.stdout.cursorTo(0);
@@ -27,21 +27,25 @@ async function chat() {
     }
 
     // Output
-    console.log(`[${date.toDateString()}]: ${userInput}`);
+    console.log(`[${date.toDateString()}](${userId}): ${userInput}`);
 
     // Send message to server
     try {
       const response = await axios.post('http://localhost:3000/', {
         userId,
+        timestamp: date.toISOString(),
         message: userInput
       });
-      console.log('Server response:', response.data);
     } catch (error) {
-      console.error('Error sending message:', error.message);
-    }
+      if (error.message === 'socket hang up' || error.code === 'EPIPE') {
+        console.warn('Server is currently busy. Please try again.');
+      }
+      if (error.message === 'connect ECONNREFUSED') {
+        console.warn('Network error. Unable to reach the server.');
+      }
   }
-}
+}}
 
 (async () => {
   await chat();
-})();
+})()

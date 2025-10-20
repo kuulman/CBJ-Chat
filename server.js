@@ -5,13 +5,19 @@ const PORT = 3000;
 
 app.use(express.json());
 
+const messages = [];
+
 app.get('/', (req, res) => {
     res.send('CBJ Chat Server is running');
+    res.json({ messages });
 });
 
 app.post('/', (req, res) => {
-    const { userId, message } = req.body;
-    console.log(`Received message from ${userId}: ${message}`);
+    const { userId, timestamp, message } = req.body;
+    console.log(`[${timestamp}](${userId}): ${message}`);
+
+    messages.push({ userId, timestamp, message });
+
     res.status(200).json({ status: 'success', message: 'Message received' });
 });
 

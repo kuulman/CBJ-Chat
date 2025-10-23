@@ -143,3 +143,6 @@ vite.config.ts.timestamp-*
 npm-debug.log
 yarn-error.log
 
+# Python files
+.venv/
+

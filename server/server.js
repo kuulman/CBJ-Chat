@@ -6,9 +6,14 @@ server.on('connection', socket => {
   console.log('New client connected');
 
   socket.on('message', message => {
-    console.log(`Received: ${message}`);
-    // Echo the message back to the client
-    socket.send(`Server received: ${message}`);
+    const msg = message.toString();
+    console.log(`Received: ${msg}`);
+
+    server.clients.forEach(client => {
+      if (client.readyState === 1 && client !== socket) {
+        client.send(msg);
+      }
+    });
   });
 
   socket.on('close', () => {

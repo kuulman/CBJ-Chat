@@ -1,4 +1,7 @@
 from datetime import datetime
+from aioconsole import ainput
+from colorama import Fore, Style, init
+init(autoreset=True)
 import sys
 import asyncio
 import websockets
@@ -11,15 +14,30 @@ def clear_lines(n = int):
         sys.stdout.write("\033[K")
 
 async def chat():
+    sessionId = '8080'
     uri = 'ws://localhost:8080'
     date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"CBJ-CHAT started at {date}. Type 'exit' to quit.")
+    print(Fore.GREEN + (f"CBJ-CHAT started at {date} with session id {sessionId}. Type 'exit' to quit."))
 
     async with websockets.connect(uri) as websocket:
+
+        async def receive_messages():
+            try:
+                async for message in websocket:
+                    sys.stdout.write("\033[K")
+                    sys.stdout.write("\033[F") 
+                    print("")
+                    print(message)
+                    print(">>: ", end="", flush=True)
+            except websockets.ConnectionClosed:
+                print(Fore.RED + "Connection closed.")
+
+        asyncio.create_task(receive_messages())
+
         while True:
-            user_input = input(">>: ")
+            user_input = await ainput(">>: ")
             clear_lines(1)
-            if user_input.lower() == 'exit' or user_input.lower() == '^c':
+            if user_input.lower() == 'exit' or user_input.lower() == '^C':
                 print("CBJ-CHAT ended. Goodbye!")
                 await websocket.close()
                 break
@@ -31,8 +49,5 @@ async def chat():
             await websocket.send(msg)
             print(msg)
 
-            response = await websocket.recv()
-
-            print(response)
 
 asyncio.run(chat())

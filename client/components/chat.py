@@ -56,8 +56,6 @@ async def chat(sessionID):
                     if not user_input.strip():
                         clear_lines()
                         continue
-                    if user_input.lower() == '^c':
-                        raise KeyboardInterrupt
 
                 except KeyboardInterrupt:
                     print("\nExiting chat.")
@@ -67,13 +65,13 @@ async def chat(sessionID):
                 msg = f"[{datetime.now().strftime('%H:%M:%S')}] {userId}: {user_input}"
 
                 # Encrypt the message
-                # AES_KEY = os.getenv("AES_KEY")
-                # iv = os.getenv("iv")
-                # unencrypted_msg = msg.encode('utf-8')
-                # objMsg = AES.new(AES_KEY, AES.MODE_CBC, iv)
-                # encrypted_msg = objMsg.encrypt(unencrypted_msg.ljust(32))  # Padding for block size
+                AES_KEY = (os.getenv("AES_KEY")).encode('utf-8')
+                iv = (os.getenv("iv")).encode('utf-8')
+                unencrypted_msg = msg.encode('utf-8')
+                objMsg = AES.new(AES_KEY, AES.MODE_CBC, iv)
+                encrypted_msg = objMsg.encrypt(unencrypted_msg.ljust(32))  # Padding for block size
 
-                await websocket.send(msg)
+                await websocket.send(encrypted_msg)
                 clear_lines(1)
                 print(msg)
 

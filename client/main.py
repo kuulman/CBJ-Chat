@@ -1,53 +1,49 @@
-from datetime import datetime
-from aioconsole import ainput
-from colorama import Fore, Style, init
-init(autoreset=True)
-import sys
+from components.chat import chat
 import asyncio
-import websockets
-
-userId = '001'
-
-def clear_lines(n = int):
-    for _ in range(n):
-        sys.stdout.write("\033[F")  
-        sys.stdout.write("\033[K")
-
-async def chat():
-    sessionId = '8080'
-    uri = 'ws://localhost:8080'
-    date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(Fore.GREEN + (f"CBJ-CHAT started at {date} with session id {sessionId}. Type 'exit' to quit."))
-
-    async with websockets.connect(uri) as websocket:
-
-        async def receive_messages():
-            try:
-                async for message in websocket:
-                    sys.stdout.write("\033[K")
-                    sys.stdout.write("\033[F") 
-                    print("")
-                    print(message)
-                    print(">>: ", end="", flush=True)
-            except websockets.ConnectionClosed:
-                print(Fore.RED + "Connection closed.")
-
-        asyncio.create_task(receive_messages())
-
-        while True:
-            user_input = await ainput(">>: ")
-            clear_lines(1)
-            if user_input.lower() == 'exit' or user_input.lower() == '^C':
-                print("CBJ-CHAT ended. Goodbye!")
-                await websocket.close()
-                break
-            if not user_input.strip():
-                clear_lines(2)
-                continue
-
-            msg = f"[{datetime.now().strftime('%H:%M:%S')}] {userId}: {user_input}"
-            await websocket.send(msg)
-            print(msg)
+import sys
+import time
+import traceback
 
 
-asyncio.run(chat())
+def prompt_session():
+    try:
+        return input("Enter session ID to join (e.g., 8080): ").strip()
+    except EOFError:
+        # EOF means no more input (e.g., user pressed Ctrl-D). Exit the loop.
+        print("\nExiting.")
+        return None
+
+
+while True:
+    try:
+        input_session = prompt_session()
+    except KeyboardInterrupt:
+        print("\nExiting.")
+        break
+
+    if input_session is None:
+        break
+
+    if not input_session.isdigit():
+        print("Invalid session ID. Please enter a numeric value.")
+        continue
+
+    try:
+        asyncio.run(chat(input_session))
+    except ConnectionRefusedError:
+        # chat() already prints a friendly message when server is offline,
+        # but handle residual ConnectionRefusedError here as well.
+        time.sleep(0.1)
+        continue
+    except Exception:
+        # Unexpected error during chat; print traceback for debugging and continue.
+        print("An unexpected error occurred while running chat:")
+        traceback.print_exc()
+        time.sleep(0.1)
+        continue
+    finally:
+        try:
+            sys.stdin.flush()
+        except Exception:
+            pass
+        time.sleep(0.1)

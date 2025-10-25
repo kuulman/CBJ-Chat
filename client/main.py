@@ -7,7 +7,7 @@ import traceback
 
 def prompt_session():
     try:
-        return input("Enter session ID to join (e.g., 8080): ").strip()
+        return input("Enter user ID to join (e.g., user): ").strip()
     except EOFError:
         # EOF means no more input (e.g., user pressed Ctrl-D). Exit the loop.
         print("\nExiting.")
@@ -23,10 +23,6 @@ while True:
 
     if input_session is None:
         break
-
-    if not input_session.isdigit():
-        print("Invalid session ID. Please enter a numeric value.")
-        continue
 
     try:
         asyncio.run(chat(input_session))

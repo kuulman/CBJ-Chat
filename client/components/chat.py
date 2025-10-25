@@ -1,17 +1,20 @@
-from datetime import datetime
-import os
+from datetime import datetime, timezone
 from colorama import Fore, Style, init
 from Crypto.Cipher import AES
 from dotenv import load_dotenv
-init(autoreset=True)
+import os
 import sys
 import asyncio
 import websockets
 from pathlib import Path
+import json
+import base64
 
+init(autoreset=True)
 load_dotenv(dotenv_path=Path(__file__).parent.parent.parent / '.env')
 
-userId = '001'
+AES_KEY = (os.getenv("AES_KEY")).encode('utf-8')
+iv = (os.getenv("iv")).encode('utf-8')
 
 def clear_lines(n=1):
     """Clear the previous `n` lines from the terminal output."""
@@ -19,21 +22,32 @@ def clear_lines(n=1):
         sys.stdout.write("\033[F")
         sys.stdout.write("\033[K")
 
-async def chat(sessionID):
-    uri = (f'ws://localhost:{sessionID}')
+async def chat(userId):
+    uri = (f'ws://localhost:8080')
     date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
 
     try:
         async with websockets.connect(uri) as websocket:
-            print(Fore.GREEN + (f"CBJ-CHAT started at {date} with session id {sessionID}. Type 'exit' to quit."))
+            print(Fore.GREEN + (f"Welcome {userId}! CBJ-CHAT started at {date}. Type 'exit' to quit."))
 
             async def receive_messages():
                 try:
                     async for message in websocket:
-                        sys.stdout.write("\033[K")
-                        sys.stdout.write("\033[F") 
-                        print(message)
+                        sys.stdout.write("\033[2K\r")
+
+
+                        # Decrypt the message
+                        encrypted_msg = base64.b64decode(message)
+                        objDec = AES.new(AES_KEY, AES.MODE_CBC, iv)
+                        decrypted_msg = objDec.decrypt(encrypted_msg)
+
+                        # Remove padding
+                        padding_length = decrypted_msg[-1]
+                        decrypted_msg = decrypted_msg[:-padding_length]
+                        message = decrypted_msg.decode('utf-8')
+
+                        # Print message
+                        print(f"{date} ({json.loads(message)['userId']}): {json.loads(message)['message']}")
                         print(">>: ", end="", flush=True)
                 except websockets.ConnectionClosed:
                     print(Fore.RED + "Connection closed.")
@@ -62,18 +76,28 @@ async def chat(sessionID):
                     await websocket.close()
                     return
 
-                msg = f"[{datetime.now().strftime('%H:%M:%S')}] {userId}: {user_input}"
+                msg = {
+                    "userId": userId,
+                    "message": user_input,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
 
                 # Encrypt the message
-                AES_KEY = (os.getenv("AES_KEY")).encode('utf-8')
-                iv = (os.getenv("iv")).encode('utf-8')
-                unencrypted_msg = msg.encode('utf-8')
+                unencrypted_msg = json.dumps(msg).encode('utf-8')
+
+                # Padding
+                block_size = 16
+                padding_length = block_size - (len(unencrypted_msg) % block_size)
+                unencrypted_msg += bytes([padding_length]) * padding_length
+
+                # Encryption
                 objMsg = AES.new(AES_KEY, AES.MODE_CBC, iv)
-                encrypted_msg = objMsg.encrypt(unencrypted_msg.ljust(32))  # Padding for block size
+                AES_msg = objMsg.encrypt(unencrypted_msg)  
+                encrypted_msg = base64.b64encode(AES_msg)
 
                 await websocket.send(encrypted_msg)
                 clear_lines(1)
-                print(msg)
+                print(f"{date} ({msg['userId']}): {msg['message']}")
 
     except ConnectionRefusedError:
         print(Fore.RED + "Server currently offline.")

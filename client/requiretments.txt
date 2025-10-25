@@ -1,0 +1,5 @@
+pycryptodome
+dotenv
+colorama
+websockets
+aioconsole

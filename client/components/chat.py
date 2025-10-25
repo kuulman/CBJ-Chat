@@ -51,6 +51,7 @@ async def chat(userId):
                         print(">>: ", end="", flush=True)
                 except websockets.ConnectionClosed:
                     print(Fore.RED + "Connection closed.")
+                    return
 
             asyncio.create_task(receive_messages())
 
@@ -74,7 +75,7 @@ async def chat(userId):
                 except KeyboardInterrupt:
                     print("\nExiting chat.")
                     await websocket.close()
-                    return
+                    break
 
                 msg = {
                     "userId": userId,

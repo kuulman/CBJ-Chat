@@ -35,7 +35,6 @@ async def chat(userId, recipient):
                     async for message in websocket:
                         sys.stdout.write("\033[2K\r")
 
-
                         # Decrypt the message
                         encrypted_msg = base64.b64decode(message)
                         objDec = AES.new(AES_KEY, AES.MODE_CBC, iv)
@@ -46,13 +45,16 @@ async def chat(userId, recipient):
                         decrypted_msg = decrypted_msg[:-padding_length]
                         message = decrypted_msg.decode('utf-8')
                         
-                        if json.loads(message)['userId'] != recipient:
-                            pass
-                        else:
+                            
+                        if recipient == 'devtools':
+                            print(f"{date} ({json.loads(message)['userId']}): {json.loads(message)['message']}")
+                            print(">>: ", end="", flush=True)
+                        elif json.loads(message)['userId'] == recipient:
                             # Print message
                             print(f"{date} ({json.loads(message)['userId']}): {json.loads(message)['message']}")
                             print(">>: ", end="", flush=True)
-                            
+                        else: pass
+
                 except websockets.ConnectionClosed:
                     print(Fore.RED + "Connection closed.")
                     return
@@ -103,6 +105,10 @@ async def chat(userId, recipient):
                 await websocket.send(encrypted_msg)
                 clear_lines(1)
                 print(f"{date} ({msg['userId']}): {msg['message']}")
+
+                # DEV SECTION
+                if userId == 'DEV' and user_input == ':info':
+                    print((Fore.GREEN + ".:CHAT KERNEL:.") + "\nYou are currently using DEV account")
 
     except ConnectionRefusedError:
         print(Fore.RED + "Server currently offline.")

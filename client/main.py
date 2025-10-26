@@ -16,7 +16,16 @@ def prompt_session():
 def prompt_session2():
     try:
         return input("Message to: ").strip()
+
     except EOFError:
+        # EOF means no more input (e.g., user pressed Ctrl-D). Exit the loop.
+        print("\nExiting.")
+        return None
+    
+def devtools():
+    try:
+        return input("Devtools access key: ")
+    except:
         # EOF means no more input (e.g., user pressed Ctrl-D). Exit the loop.
         print("\nExiting.")
         return None
@@ -28,8 +37,8 @@ while True:
         print("\nExiting.")
         break
 
-    if input_session is None:
-        break
+    if input_session is None or input_session.strip() == "":
+        continue
 
     try:
         input_session2 = prompt_session2()
@@ -37,11 +46,25 @@ while True:
         print("\nExiting.")
         break
 
-    if input_session2 is None:
+    if input_session2 is None or input_session2.strip() == "":
+        continue
+
+    try:
+        if input_session2 == 'devtools':   
+            input_dev = devtools()
+            if input_dev == 'devtools':
+                input_session = 'DEV'
+            else:
+                print("You're not developer!")
+                continue
+        else:
+            pass
+    except KeyboardInterrupt:
+        print("\nExiting.")
         break
 
     try:
-        asyncio.run(chat(input_session))
+        asyncio.run(chat(input_session, input_session2))
     except ConnectionRefusedError:
         # chat() already prints a friendly message when server is offline,
         # but handle residual ConnectionRefusedError here as well.
@@ -49,8 +72,7 @@ while True:
         continue
     except Exception:
         # Unexpected error during chat; print traceback for debugging and continue.
-        print("An unexpected error occurred while running chat:")
-        traceback.print_exc()
+        print("An unexpected error occurred while running chat.")
         time.sleep(0.1)
         continue
     finally:

@@ -13,6 +13,13 @@ def prompt_session():
         print("\nExiting.")
         return None
 
+def prompt_session2():
+    try:
+        return input("Message to: ").strip()
+    except EOFError:
+        # EOF means no more input (e.g., user pressed Ctrl-D). Exit the loop.
+        print("\nExiting.")
+        return None
 
 while True:
     try:
@@ -22,6 +29,15 @@ while True:
         break
 
     if input_session is None:
+        break
+
+    try:
+        input_session2 = prompt_session2()
+    except KeyboardInterrupt:
+        print("\nExiting.")
+        break
+
+    if input_session2 is None:
         break
 
     try:

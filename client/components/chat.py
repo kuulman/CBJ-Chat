@@ -22,7 +22,7 @@ def clear_lines(n=1):
         sys.stdout.write("\033[F")
         sys.stdout.write("\033[K")
 
-async def chat(userId):
+async def chat(userId, recipient):
     uri = (f'ws://localhost:8080')
     date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -45,10 +45,14 @@ async def chat(userId):
                         padding_length = decrypted_msg[-1]
                         decrypted_msg = decrypted_msg[:-padding_length]
                         message = decrypted_msg.decode('utf-8')
-
-                        # Print message
-                        print(f"{date} ({json.loads(message)['userId']}): {json.loads(message)['message']}")
-                        print(">>: ", end="", flush=True)
+                        
+                        if json.loads(message)['userId'] != recipient:
+                            pass
+                        else:
+                            # Print message
+                            print(f"{date} ({json.loads(message)['userId']}): {json.loads(message)['message']}")
+                            print(">>: ", end="", flush=True)
+                            
                 except websockets.ConnectionClosed:
                     print(Fore.RED + "Connection closed.")
                     return

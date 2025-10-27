@@ -52,7 +52,7 @@ async def chat(userId, recipient):
                             print("\r", end="")
                             print((f"{Fore.LIGHTCYAN_EX}{date} ({json.loads(message)['userId']} to {json.loads(message)['recipient']})") + (f"{Fore.WHITE}: {json.loads(message)['message']}"))
                             print(">>: ", end="", flush=True)
-                        elif json.loads(message)['recipient'] == recipient: # or json.loads(message)['recipient'] == 'devtools': (Send to all user settings. Default settings = Disabled)
+                        elif json.loads(message)['recipient'] == recipient or json.loads(message)['recipient'] == userId: # or json.loads(message)['recipient'] == 'devtools': (Send to all user settings. Default settings = Disabled)
                             print("\r", end="")
                             print((f"{Fore.LIGHTCYAN_EX}{date} ({json.loads(message)['userId']} to {json.loads(message)['recipient']})") + (f"{Fore.WHITE}: {json.loads(message)['message']}"))
                             print(">>: ", end="", flush=True)
@@ -88,12 +88,27 @@ async def chat(userId, recipient):
                     await websocket.close()
                     break
 
+                # COMMANDS 
+                if userId == 'DEV' and user_input == ':info'.lower():
+                    print((Fore.GREEN + ".:CHAT IN TERMINAL:.") + "\nYou are currently using DEV account")
+                if userId == 'DEV':
+                    print(f'{Fore.YELLOW}DEFAULT: Devtools users cannot send chat to anyone. They are can receive message from everyone. \nEnable receive dev message for all client on chat.py file lines 52 to') # Friendly warning
+                if user_input.startswith('reply:'.lower()):
+                    ReplyUser = user_input.split("reply:", 1)[1].strip()
+                    if not ReplyUser:
+                        print(f'{Fore.RED}ReplyUser cannot be null!')
+                    else:
+                        print(f'{Fore.GREEN}INFO: Reply mode to {ReplyUser} user')
+                        recipient = ReplyUser
+                        continue
+
                 msg = {
                     "userId": userId,
                     "message": user_input,
                     "recipient": recipient,
                     "timestamp": datetime.now(timezone.utc).isoformat()
                 }
+                
 
                 # Encrypt the message
                 unencrypted_msg = json.dumps(msg).encode('utf-8')
@@ -112,11 +127,7 @@ async def chat(userId, recipient):
                 clear_lines(1)
                 print((f"{Fore.LIGHTCYAN_EX}{date} ({msg['userId']} to {msg['recipient']})") + (f"{Fore.WHITE}: {msg['message']}"))
 
-                # DEV AND FILTER SECTION
-                if userId == 'DEV' and user_input == ':info':
-                    print((Fore.GREEN + ".:CHAT IN TERMINAL:.") + "\nYou are currently using DEV account")
-                if userId == 'DEV':
-                    print(f'{Fore.YELLOW}DEFAULT: Devtools users cannot send chat to anyone. They are can receive message from everyone. \nEnable receive dev message for all client on chat.py file lines 52 to') # Friendly warning
+
     except ConnectionRefusedError:
         print(Fore.RED + "Server currently offline.")
 

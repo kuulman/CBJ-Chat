@@ -9,6 +9,7 @@ import websockets
 from pathlib import Path
 import json
 import base64
+import time
 
 init(autoreset=True)
 load_dotenv(dotenv_path=Path(__file__).parent.parent.parent / '.env')
@@ -29,6 +30,7 @@ async def chat(userId, recipient):
     try:
         async with websockets.connect(uri) as websocket:
             print(Fore.GREEN + (f"Welcome {userId}! CBJ-CHAT started at {date}. Type 'exit' to quit."))
+            print(Fore.YELLOW + (f"WARNING: Dont send any sensitive chat at testing server!"))
 
             async def receive_messages():
                 try:
@@ -47,11 +49,10 @@ async def chat(userId, recipient):
                         
                             
                         if recipient == 'devtools':
-                            print(f"{date} ({json.loads(message)['userId']}): {json.loads(message)['message']}")
+                            print(f"{date} ({json.loads(message)['userId']} to {json.loads(message)['recipient']}): {json.loads(message)['message']}")
                             print(">>: ", end="", flush=True)
-                        elif json.loads(message)['userId'] == recipient:
-                            # Print message
-                            print(f"{date} ({json.loads(message)['userId']}): {json.loads(message)['message']}")
+                        elif json.loads(message)['recipient'] == recipient: # or json.loads(message)['recipient'] == 'devtools': (Send to all user settings. Default settings = Disabled)
+                            print(f"{date} ({json.loads(message)['userId']} to {json.loads(message)['recipient']}): {json.loads(message)['message']}")
                             print(">>: ", end="", flush=True)
                         else: pass
 
@@ -86,6 +87,7 @@ async def chat(userId, recipient):
                 msg = {
                     "userId": userId,
                     "message": user_input,
+                    "recipient": recipient,
                     "timestamp": datetime.now(timezone.utc).isoformat()
                 }
 
@@ -104,11 +106,12 @@ async def chat(userId, recipient):
 
                 await websocket.send(encrypted_msg)
                 clear_lines(1)
-                print(f"{date} ({msg['userId']}): {msg['message']}")
+                print(f"{date} ({msg['userId']} to {msg['recipient']}): {msg['message']}")
 
-                # DEV SECTION
+                # DEV AND FILTER SECTION
                 if userId == 'DEV' and user_input == ':info':
-                    print((Fore.GREEN + ".:CHAT KERNEL:.") + "\nYou are currently using DEV account")
-
+                    print((Fore.GREEN + ".:CHAT IN TERMINAL:.") + "\nYou are currently using DEV account")
+                if userId == 'DEV':
+                    print(f'{Fore.YELLOW}DEFAULT: Devtools users cannot send chat to anyone. They are can receive message from everyone. \nEnable receive dev message for all client on chat.py file lines 52 to') # Friendly warning
     except ConnectionRefusedError:
         print(Fore.RED + "Server currently offline.")

@@ -49,12 +49,16 @@ async def chat(userId, recipient):
                         
                             
                         if recipient == 'devtools':
-                            print(f"{date} ({json.loads(message)['userId']} to {json.loads(message)['recipient']}): {json.loads(message)['message']}")
+                            print("\r", end="")
+                            print((f"{Fore.LIGHTCYAN_EX}{date} ({json.loads(message)['userId']} to {json.loads(message)['recipient']})") + (f"{Fore.WHITE}: {json.loads(message)['message']}"))
                             print(">>: ", end="", flush=True)
                         elif json.loads(message)['recipient'] == recipient: # or json.loads(message)['recipient'] == 'devtools': (Send to all user settings. Default settings = Disabled)
-                            print(f"{date} ({json.loads(message)['userId']} to {json.loads(message)['recipient']}): {json.loads(message)['message']}")
+                            print("\r", end="")
+                            print((f"{Fore.LIGHTCYAN_EX}{date} ({json.loads(message)['userId']} to {json.loads(message)['recipient']})") + (f"{Fore.WHITE}: {json.loads(message)['message']}"))
                             print(">>: ", end="", flush=True)
-                        else: pass
+                        else: 
+                            print(">>: ", end="", flush=True)
+                            pass
 
                 except websockets.ConnectionClosed:
                     print(Fore.RED + "Connection closed.")
@@ -106,7 +110,7 @@ async def chat(userId, recipient):
 
                 await websocket.send(encrypted_msg)
                 clear_lines(1)
-                print(f"{date} ({msg['userId']} to {msg['recipient']}): {msg['message']}")
+                print((f"{Fore.LIGHTCYAN_EX}{date} ({msg['userId']} to {msg['recipient']})") + (f"{Fore.WHITE}: {msg['message']}"))
 
                 # DEV AND FILTER SECTION
                 if userId == 'DEV' and user_input == ':info':
@@ -115,3 +119,5 @@ async def chat(userId, recipient):
                     print(f'{Fore.YELLOW}DEFAULT: Devtools users cannot send chat to anyone. They are can receive message from everyone. \nEnable receive dev message for all client on chat.py file lines 52 to') # Friendly warning
     except ConnectionRefusedError:
         print(Fore.RED + "Server currently offline.")
+
+

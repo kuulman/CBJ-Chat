@@ -30,7 +30,7 @@ async def chat(userId, recipient):
     try:
         async with websockets.connect(uri) as websocket:
             print(Fore.GREEN + (f"Welcome {userId}! CBJ-CHAT started at {date}. Type 'exit' to quit."))
-            print(Fore.YELLOW + (f"WARNING: Dont send any sensitive chat at testing server!"))
+            print(Fore.YELLOW + (f"[INFO] By default, chat server are connected to testing server (For testing version). Dont send any sensitive chat."))
 
             async def receive_messages():
                 try:
@@ -61,7 +61,7 @@ async def chat(userId, recipient):
                             pass
 
                 except websockets.ConnectionClosed:
-                    print(Fore.RED + "Connection closed.")
+                    print(Fore.RED + "[ERROR] Connection closed.")
                     return
 
             asyncio.create_task(receive_messages())
@@ -76,7 +76,7 @@ async def chat(userId, recipient):
                 try:
                     user_input = await ainput(">>: ")
                     if user_input.lower() == 'exit':
-                        print("CBJ-CHAT ended. Goodbye!")
+                        print(f"{Fore.BLUE}[INFO] CBJ-CHAT ended. Goodbye!")
                         await websocket.close()
                         return
                     if not user_input.strip():
@@ -89,16 +89,21 @@ async def chat(userId, recipient):
                     break
 
                 # COMMANDS 
+                # DEV COMMANDS
                 if userId == 'DEV' and user_input == ':info'.lower():
                     print((Fore.GREEN + ".:CHAT IN TERMINAL:.") + "\nYou are currently using DEV account")
                 if userId == 'DEV':
-                    print(f'{Fore.YELLOW}DEFAULT: Devtools users cannot send chat to anyone. They are can receive message from everyone. \nEnable receive dev message for all client on chat.py file lines 52 to') # Friendly warning
+                    print(f'{Fore.YELLOW}[DEFAULT] Devtools users cannot send chat to anyone. They are can receive message from everyone. \nEnable receive dev message for all client on chat.py file lines 52 to') # Friendly warning
+
+                # USER COMMANDS
                 if user_input.startswith('reply:'.lower()):
                     ReplyUser = user_input.split("reply:", 1)[1].strip()
                     if not ReplyUser:
-                        print(f'{Fore.RED}ReplyUser cannot be null!')
+                        print(f'{Fore.RED}[ERROR] ReplyUser cannot be null!')
+                    elif ReplyUser == 'DEV':
+                        print(f'{Fore.RED}[ERROR] DEV user cannot be replied')
                     else:
-                        print(f'{Fore.GREEN}INFO: Reply mode to {ReplyUser} user')
+                        print(f'{Fore.GREEN}[INFO] Reply mode to {ReplyUser} user')
                         recipient = ReplyUser
                         continue
 
@@ -129,6 +134,6 @@ async def chat(userId, recipient):
 
 
     except ConnectionRefusedError:
-        print(Fore.RED + "Server currently offline.")
+        print(Fore.RED + "[ERROR] Server currently offline.")
 
 

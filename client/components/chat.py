@@ -9,13 +9,14 @@ import websockets
 from pathlib import Path
 import json
 import base64
-import time
+import jwt
 
 init(autoreset=True)
 load_dotenv(dotenv_path=Path(__file__).parent.parent.parent / '.env')
 
 AES_KEY = (os.getenv("AES_KEY")).encode('utf-8')
 iv = (os.getenv("iv")).encode('utf-8')
+JWT_KEY = (os.getenv('JWT_SECRET')).encode('utf-8')
 
 def clear_lines(n=1):
     """Clear the previous `n` lines from the terminal output."""
@@ -108,7 +109,7 @@ async def chat(userId, recipient):
                         continue
 
                 msg = {
-                    "userId": userId,
+                    "user": user_input,
                     "message": user_input,
                     "recipient": recipient,
                     "timestamp": datetime.now(timezone.utc).isoformat()
@@ -128,7 +129,15 @@ async def chat(userId, recipient):
                 AES_msg = objMsg.encrypt(unencrypted_msg)  
                 encrypted_msg = base64.b64encode(AES_msg)
 
-                await websocket.send(encrypted_msg)
+                payload = {
+                    'user': userId,
+                    'message': encrypted_msg,
+                    'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+                }
+
+                token = jwt.encode(payload, JWT_KEY, algorithm='HS256')
+
+                await websocket.send(token)
                 clear_lines(1)
                 print((f"{Fore.LIGHTCYAN_EX}{date} ({msg['userId']} to {msg['recipient']})") + (f"{Fore.WHITE}: {msg['message']}"))
 

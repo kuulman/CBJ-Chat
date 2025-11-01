@@ -70,9 +70,10 @@ while True:
         # but handle residual ConnectionRefusedError here as well.
         time.sleep(0.1)
         continue
-    except Exception:
+    except Exception as e:
         # Unexpected error during chat; print traceback for debugging and continue.
-        print("An unexpected error occurred while running chat.")
+        print("An unexpected error occurred while running chat:")
+        traceback.print_exc()
         time.sleep(0.1)
         continue
     finally:

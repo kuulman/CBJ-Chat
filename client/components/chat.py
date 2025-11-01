@@ -9,14 +9,13 @@ import websockets
 from pathlib import Path
 import json
 import base64
-import jwt
+import time
 
 init(autoreset=True)
 load_dotenv(dotenv_path=Path(__file__).parent.parent.parent / '.env')
 
 AES_KEY = (os.getenv("AES_KEY")).encode('utf-8')
 iv = (os.getenv("iv")).encode('utf-8')
-JWT_KEY = (os.getenv('JWT_SECRET')).encode('utf-8')
 
 def clear_lines(n=1):
     """Clear the previous `n` lines from the terminal output."""
@@ -33,23 +32,39 @@ async def chat(userId, recipient):
             print(Fore.GREEN + (f"Welcome {userId}! CBJ-CHAT started at {date}. Type 'exit' to quit."))
             print(Fore.YELLOW + (f"[INFO] By default, chat server are connected to testing server (For testing version). Dont send any sensitive chat."))
 
+            await websocket.send(json.dumps({
+                "type": "init",
+                "secret_id": userId
+            }))
+
+
             async def receive_messages():
                 try:
                     async for message in websocket:
                         sys.stdout.write("\033[2K\r")
 
-                        # Decrypt the message
-                        encrypted_msg = base64.b64decode(message)
-                        objDec = AES.new(AES_KEY, AES.MODE_CBC, iv)
-                        decrypted_msg = objDec.decrypt(encrypted_msg)
+                        data = json.loads(message)  # parse JSON
+                        encrypted_msg_b64 = data.get('message')  # ambil field msg
 
-                        # Remove padding
-                        padding_length = decrypted_msg[-1]
-                        decrypted_msg = decrypted_msg[:-padding_length]
-                        message = decrypted_msg.decode('utf-8')
-                        
+                        if not encrypted_msg_b64:
+                            continue
+
+                        encrypted_msg = base64.b64decode(encrypted_msg_b64)  # baru decode ke bytes
+
+                        # Decrypt AES
+                        objDec = AES.new(AES_KEY, AES.MODE_CBC, iv)
+                        decrypted_padded = objDec.decrypt(encrypted_msg)
+
+                        # Remove PKCS7 padding
+                        pad_len = decrypted_padded[-1]
+                        message = decrypted_padded[:-pad_len].decode('utf-8')
                             
-                        if recipient == 'devtools':
+
+                        print("\r", end="")
+                        print((f"{Fore.LIGHTCYAN_EX}{date} ({json.loads(message)['userId']} to {json.loads(message)['recipient']})") + (f"{Fore.WHITE}: {json.loads(message)['message']}"))
+                        print(">>: ", end="", flush=True)
+                        
+                        ''' if recipient == 'devtools':
                             print("\r", end="")
                             print((f"{Fore.LIGHTCYAN_EX}{date} ({json.loads(message)['userId']} to {json.loads(message)['recipient']})") + (f"{Fore.WHITE}: {json.loads(message)['message']}"))
                             print(">>: ", end="", flush=True)
@@ -58,9 +73,9 @@ async def chat(userId, recipient):
                             print((f"{Fore.LIGHTCYAN_EX}{date} ({json.loads(message)['userId']} to {json.loads(message)['recipient']})") + (f"{Fore.WHITE}: {json.loads(message)['message']}"))
                             print(">>: ", end="", flush=True)
                         else: 
-                            print(">>: ", end="", flush=True)
-                            pass
-
+                            print(">>: ", end="", flush=True) 
+                            pass '''
+                        
                 except websockets.ConnectionClosed:
                     print(Fore.RED + "[ERROR] Connection closed.")
                     return
@@ -108,16 +123,10 @@ async def chat(userId, recipient):
                         recipient = ReplyUser
                         continue
 
-                msg = {
-                    "user": user_input,
-                    "message": user_input,
-                    "recipient": recipient,
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                }
                 
 
                 # Encrypt the message
-                unencrypted_msg = json.dumps(msg).encode('utf-8')
+                unencrypted_msg = user_input.encode()
 
                 # Padding
                 block_size = 16
@@ -127,20 +136,18 @@ async def chat(userId, recipient):
                 # Encryption
                 objMsg = AES.new(AES_KEY, AES.MODE_CBC, iv)
                 AES_msg = objMsg.encrypt(unencrypted_msg)  
-                encrypted_msg = base64.b64encode(AES_msg)
+                encrypted_msg = base64.b64encode(AES_msg).decode('utf-8')
 
-                payload = {
-                    'user': userId,
-                    'message': encrypted_msg,
-                    'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
-                }
+                # Send to server
+                await websocket.send(json.dumps({
+                    'type': 'message',
+                    'from': user_input,
+                    'to': recipient,
+                    'msg': encrypted_msg
+                }))
 
-                token = jwt.encode(payload, JWT_KEY, algorithm='HS256')
-
-                await websocket.send(token)
                 clear_lines(1)
-                print((f"{Fore.LIGHTCYAN_EX}{date} ({msg['userId']} to {msg['recipient']})") + (f"{Fore.WHITE}: {msg['message']}"))
-
+                print((f"{Fore.LIGHTCYAN_EX}{date} ({userId} to {recipient})") + (f"{Fore.WHITE}: {user_input}"))
 
     except ConnectionRefusedError:
         print(Fore.RED + "[ERROR] Server currently offline.")

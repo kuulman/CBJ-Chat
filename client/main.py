@@ -22,7 +22,7 @@ def prompt_session2():
         print("\nExiting.")
         return None
     
-def devtools():
+# def devtools():
     try:
         return input("Devtools access key: ")
     except:
@@ -49,7 +49,8 @@ while True:
     if input_session2 is None or input_session2.strip() == "":
         continue
 
-    try:
+        # Unnecessary code
+    ''' try: 
         if input_session2 == 'devtools':   
             input_dev = devtools()
             if input_dev == 'devtools':
@@ -61,7 +62,7 @@ while True:
             pass
     except KeyboardInterrupt:
         print("\nExiting.")
-        break
+        break '''
 
     try:
         asyncio.run(chat(input_session, input_session2))

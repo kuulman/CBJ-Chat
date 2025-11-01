@@ -17,15 +17,15 @@ load_dotenv(dotenv_path=Path(__file__).parent.parent.parent / '.env')
 AES_KEY = (os.getenv("AES_KEY")).encode('utf-8')
 iv = (os.getenv("iv")).encode('utf-8')
 
-def clear_lines(n=1):
-    """Clear the previous `n` lines from the terminal output."""
+def clear_lines(n=1): 
+    # Clear the previous `n` lines from the terminal output.
     for _ in range(n):
         sys.stdout.write("\033[F")
         sys.stdout.write("\033[K")
 
 async def chat(userId, recipient):
-    uri = (f'ws://localhost:8080')
-    date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    uri = (f'ws://localhost:8080') # Websocket server
+    date = datetime.now().strftime("%Y-%m-%d %H:%M:%S") # Get local time
 
     try:
         async with websockets.connect(uri) as websocket:
@@ -35,21 +35,22 @@ async def chat(userId, recipient):
             await websocket.send(json.dumps({
                 "type": "init",
                 "secret_id": userId
-            }))
+            })) # Send init message to server as identification
 
 
             async def receive_messages():
                 try:
                     async for message in websocket:
-                        sys.stdout.write("\033[2K\r")
+                        sys.stdout.write("\033[2K\r") # delete ">>" before print received message
+                        
+                        # Parse JSON and take msg field
+                        data = json.loads(message)  
+                        encrypted_msg_b64 = data.get('message') 
 
-                        data = json.loads(message)  # parse JSON
-                        encrypted_msg_b64 = data.get('message')  # ambil field msg
-
-                        if not encrypted_msg_b64:
+                        if not encrypted_msg_b64: # When type isnt message, ignore.
                             continue
 
-                        encrypted_msg = base64.b64decode(encrypted_msg_b64)  # baru decode ke bytes
+                        encrypted_msg = base64.b64decode(encrypted_msg_b64)  # decode to bytes
 
                         # Decrypt AES
                         objDec = AES.new(AES_KEY, AES.MODE_CBC, iv)
@@ -64,6 +65,7 @@ async def chat(userId, recipient):
                         print((f"{Fore.LIGHTCYAN_EX}{date} ({json.loads(message)['userId']} to {json.loads(message)['recipient']})") + (f"{Fore.WHITE}: {json.loads(message)['message']}"))
                         print(">>: ", end="", flush=True)
                         
+                        # Unnecessary code
                         ''' if recipient == 'devtools':
                             print("\r", end="")
                             print((f"{Fore.LIGHTCYAN_EX}{date} ({json.loads(message)['userId']} to {json.loads(message)['recipient']})") + (f"{Fore.WHITE}: {json.loads(message)['message']}"))
@@ -77,10 +79,10 @@ async def chat(userId, recipient):
                             pass '''
                         
                 except websockets.ConnectionClosed:
-                    print(Fore.RED + "[ERROR] Connection closed.")
+                    print(Fore.RED + "[ERROR] Connection closed.") # Error handling when server unexpetedly close
                     return
 
-            asyncio.create_task(receive_messages())
+            asyncio.create_task(receive_messages()) # Async the function above
 
             # Provide an async-compatible input fallback so we don't depend on
             # the external `aioconsole` package. This uses asyncio.to_thread
@@ -91,11 +93,11 @@ async def chat(userId, recipient):
             while True:
                 try:
                     user_input = await ainput(">>: ")
-                    if user_input.lower() == 'exit':
+                    if user_input.lower() == 'exit': # Close when client type "exit"
                         print(f"{Fore.BLUE}[INFO] CBJ-CHAT ended. Goodbye!")
                         await websocket.close()
                         return
-                    if not user_input.strip():
+                    if not user_input.strip(): 
                         clear_lines()
                         continue
 
@@ -105,14 +107,14 @@ async def chat(userId, recipient):
                     break
 
                 # COMMANDS 
-                # DEV COMMANDS
-                if userId == 'DEV' and user_input == ':info'.lower():
+                # DEV COMMANDS (Currently unnecessary)
+                ''' if userId == 'DEV' and user_input == ':info'.lower():
                     print((Fore.GREEN + ".:CHAT IN TERMINAL:.") + "\nYou are currently using DEV account")
                 if userId == 'DEV':
-                    print(f'{Fore.YELLOW}[DEFAULT] Devtools users cannot send chat to anyone. They are can receive message from everyone. \nEnable receive dev message for all client on chat.py file lines 52 to') # Friendly warning
+                    print(f'{Fore.YELLOW}[DEFAULT] Devtools users cannot send chat to anyone. They are can receive message from everyone. \nEnable receive dev message for all client on chat.py file lines 52 to') # Friendly warning '''
 
                 # USER COMMANDS
-                if user_input.startswith('reply:'.lower()):
+                if user_input.startswith('reply:'.lower()): # Move to another client chat session
                     ReplyUser = user_input.split("reply:", 1)[1].strip()
                     if not ReplyUser:
                         print(f'{Fore.RED}[ERROR] ReplyUser cannot be null!')
@@ -149,7 +151,7 @@ async def chat(userId, recipient):
                 clear_lines(1)
                 print((f"{Fore.LIGHTCYAN_EX}{date} ({userId} to {recipient})") + (f"{Fore.WHITE}: {user_input}"))
 
-    except ConnectionRefusedError:
+    except ConnectionRefusedError: # Returned value when server currently offline
         print(Fore.RED + "[ERROR] Server currently offline.")
 
 

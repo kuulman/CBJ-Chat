@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from email import message
 from colorama import Fore, Style, init
 from Crypto.Cipher import AES
 from dotenv import load_dotenv
@@ -42,10 +43,16 @@ async def chat(userId, recipient):
                 try:
                     async for message in websocket:
                         sys.stdout.write("\033[2K\r") # delete ">>" before print received message
-                        
-                        # Parse JSON and take msg field
-                        data = json.loads(message)  
+
+                        try:
+                            data = json.loads(message)
+                        except json.JSONDecodeError:
+                            print("JSON Decode Error", repr(message))
+                            continue 
+
                         encrypted_msg_b64 = data.get('message') 
+                        recv_recipient = data.get('to')
+                        recv_from = data.get('from')
 
                         if not encrypted_msg_b64: # When type isnt message, ignore.
                             continue
@@ -60,9 +67,8 @@ async def chat(userId, recipient):
                         pad_len = decrypted_padded[-1]
                         message = decrypted_padded[:-pad_len].decode('utf-8')
                             
-
                         print("\r", end="")
-                        print((f"{Fore.LIGHTCYAN_EX}{date} ({json.loads(message)['userId']} to {json.loads(message)['recipient']})") + (f"{Fore.WHITE}: {json.loads(message)['message']}"))
+                        print((f"{Fore.LIGHTCYAN_EX}{date} ({recv_from} to {recv_recipient})") + (f"{Fore.WHITE}: {message}"))
                         print(">>: ", end="", flush=True)
                         
                         # Unnecessary code
